@@ -31,22 +31,27 @@
       </attribute>
       <column>
        <property name="text">
-        <string>x_i(t)</string>
+        <string>x'(t)</string>
+       </property>
+       <property name="font">
+        <font>
+         <family>Segoe UI Semilight</family>
+        </font>
        </property>
       </column>
       <column>
        <property name="text">
-        <string>f_i(x_1(t),...,x_n(t))</string>
+        <string>f(x(t))</string>
        </property>
       </column>
       <column>
        <property name="text">
-        <string>x_i(t=t_0)</string>
+        <string>x(t0)</string>
        </property>
       </column>
       <column>
        <property name="text">
-        <string>g(x_1(t_0),...,x_n(t_0))</string>
+        <string>g(x(t0))</string>
        </property>
       </column>
      </widget>
@@ -84,6 +89,8 @@
     <property name="title">
      <string>Главная</string>
     </property>
+    <addaction name="load_system_action"/>
+    <addaction name="save_system_action"/>
    </widget>
    <widget class="QMenu" name="reference_menu">
     <property name="title">
@@ -104,6 +111,16 @@
   <action name="about_action">
    <property name="text">
     <string>Об авторе</string>
+   </property>
+  </action>
+  <action name="load_system_action">
+   <property name="text">
+    <string>Загрузить систему</string>
+   </property>
+  </action>
+  <action name="save_system_action">
+   <property name="text">
+    <string>Сохранить систему</string>
    </property>
   </action>
  </widget>
