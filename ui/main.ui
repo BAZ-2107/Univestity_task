@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>826</width>
+    <width>831</width>
     <height>541</height>
    </rect>
   </property>
@@ -31,7 +31,7 @@
       </attribute>
       <column>
        <property name="text">
-        <string>x'(t)</string>
+        <string>f(x)=g(x)</string>
        </property>
        <property name="font">
         <font>
@@ -41,20 +41,92 @@
       </column>
       <column>
        <property name="text">
-        <string>f(x(t))</string>
+        <string>input f(x)=g(x)</string>
        </property>
       </column>
       <column>
        <property name="text">
-        <string>x(t0)</string>
+        <string>x0</string>
        </property>
       </column>
       <column>
        <property name="text">
-        <string>g(x(t0))</string>
+        <string>input x0</string>
        </property>
       </column>
      </widget>
+    </item>
+    <item>
+     <widget class="QTableWidget" name="table2"/>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Используемый метод:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="method">
+        <item>
+         <property name="text">
+          <string>RK45</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>RK23</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>DOP853</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Radau</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>BDF</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>LSODA</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Число точек на траектории:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSpinBox" name="point_count">
+        <property name="minimum">
+         <number>2</number>
+        </property>
+        <property name="maximum">
+         <number>50</number>
+        </property>
+        <property name="value">
+         <number>10</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
@@ -74,6 +146,13 @@
       </item>
      </layout>
     </item>
+    <item>
+     <widget class="QPushButton" name="solve_system">
+      <property name="text">
+       <string>Решить систему</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -81,7 +160,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>826</width>
+     <width>831</width>
      <height>26</height>
     </rect>
    </property>

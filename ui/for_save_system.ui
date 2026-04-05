@@ -30,12 +30,12 @@
      </attribute>
      <column>
       <property name="text">
-       <string>f(x)</string>
+       <string>f(x)=g(x)</string>
       </property>
      </column>
      <column>
       <property name="text">
-       <string>g(x)</string>
+       <string>x0</string>
       </property>
      </column>
     </widget>
