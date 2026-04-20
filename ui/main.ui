@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>831</width>
-    <height>541</height>
+    <height>671</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -43,6 +43,12 @@
        <property name="text">
         <string>input f(x)=g(x)</string>
        </property>
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
       </column>
       <column>
        <property name="text">
@@ -52,6 +58,12 @@
       <column>
        <property name="text">
         <string>input x0</string>
+       </property>
+       <property name="font">
+        <font>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
        </property>
       </column>
      </widget>

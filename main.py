@@ -78,7 +78,7 @@ class Window(QMainWindow):
     
                 solution = solve_ivp(ode_system, t_span, t_eval=t_eval, y0=initial, method=self.method.currentText())
                 t, y = solution.t, solution.y
-                print(solution)
+                #print(solution)
                 self.table2.clear()
                 self.table2.setRowCount(n)
                 fact_t_points = len(t)
@@ -90,6 +90,9 @@ class Window(QMainWindow):
                         item = QTableWidgetItem(f"{y[i][j]:.4f}")
                         item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                         self.table2.setItem(i, j, item)
+                #norm_points = list(np.linalg.norm(i) for i in zip(y))
+                #print(norm_points)
+                #print("y__________", list(zip(y)))
         except Exception as message:
             print(message)
             self.statusbar.showMessage("При вычислении произошла ошибка")
