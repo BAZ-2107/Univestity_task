@@ -11,6 +11,142 @@ import sys
 from datetime import datetime
 from scipy.integrate import solve_ivp
 import json
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+
+
+class PlotCanvas(FigureCanvas):
+    def __init__(self, parent=None):
+        self.figure = Figure(figsize=(5, 4), dpi=100)
+        self.axes = self.figure.add_subplot(111)
+
+        super(PlotCanvas, self).__init__(self.figure)
+        self.setParent(parent)
+
+    def plot_t(self, a, b, arr, indexes):
+        x = np.linspace(a, b, len(arr[0]))
+
+        self.axes.clear()
+        self.axes.set_title("Зависимость " + ",".join(f"x{i + 1}(t)" for i in indexes) + "от t")
+        self.axes.set_xlabel("Ось t")
+        self.axes.set_ylabel("Ось xi(t)")
+        for index in indexes:
+            self.axes.plot(x, arr[index], label=f'x{index + 1}(t)', linewidth=2)
+        #self.axes.grid(True)
+        self.axes.legend()
+        self.figure.tight_layout()
+        self.draw()
+
+    def plot_x(self, a, b, arr, x, y):
+        self.axes.clear()
+        self.axes.set_title("Зависимость " + f"x{x + 1}(t)" + "от " + f"x{y + 1}(t)")
+        self.axes.set_xlabel("Ось " + f"x{y + 1}(t)")
+        self.axes.set_ylabel("Ось " + f"x{x + 1}(t)")
+        self.axes.plot(arr[y], arr[x], linewidth=2)
+
+        self.axes.plot(arr[y][0], arr[x][0], 'ro', markersize=10)
+        self.axes.text(arr[y][0], arr[x][0], ' S', fontsize=12, va='bottom', ha='left')
+        self.axes.plot(arr[y][-1], arr[x][-1], 'go', markersize=10)
+        self.axes.text(arr[y][-1], arr[x][-1], ' F', fontsize=12, va='bottom', ha='left')
+
+        self.axes.set_aspect("equal")
+        #self.axes.grid(True)
+        self.axes.axhline(y=0, color='black', linewidth=0.8)
+        self.axes.axvline(x=0, color='black', linewidth=0.8)
+        self.figure.tight_layout()
+        self.draw()    
+
+
+class ShowGraphic(QWidget):
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__()
+        uic.loadUi("ui/for_showGraphic.ui", self)
+        self.parent = parent
+        self.setupUI(*args, **kwargs)
+
+    def setupUI(self, *args, **kwargs):
+        self.p = args[0]
+        self.n = len(self.p)
+        self.arrr_for_t, self.arrr_for_x_y, self.arrr_for_x_x = list([self.checkBox]), list([self.radioButton_3]), list([self.radioButton_4])
+        for i in range(1, self.n):
+            for_tt = QCheckBox(f"x{i + 1}")
+            for_x_yy = QRadioButton(f"x{i + 1}")
+            for_x_xx = QRadioButton(f"x{i + 1}")
+            self.arrr_for_t.append(for_tt)
+            self.arrr_for_x_x.append(for_x_xx)
+            self.arrr_for_x_y.append(for_x_yy)
+            self.for_t.layout().addWidget(for_tt)
+            self.for_x_y.layout().addWidget(for_x_yy)
+            self.for_x_x.layout().addWidget(for_x_xx)
+        self.canvas = PlotCanvas(self)
+        self.for_x.hide()
+        self.layout().addWidget(self.canvas)
+        self.n_count = QSpinBox(self)
+        self.n_count.setRange(2, 1000)
+        self.n_count.setValue(100)
+        self.n_count.setSingleStep(100)
+        self.run = QPushButton("Запуск")
+
+        hboxlayout = QHBoxLayout()
+        hboxlayout.addWidget(QLabel("Число точек: ", self))
+        hboxlayout.addWidget(self.n_count)
+
+        self.layout().addItem(hboxlayout)
+        self.layout().addWidget(self.run)
+        self.run.clicked.connect(self.__draw)
+        self.parent.setDisabled(True)
+        self.nn = self.n_count.value()
+        self.solution = None
+        self.res = None
+        self.res = self.__run()
+
+    def __draw(self):
+        if self.nn != self.n_count.value():
+            self.res = self.__run()
+            self.nn = self.n_count.value()
+        if self.res:
+            if self.for_x.isHidden():
+                indexes = list()
+                for i, elem in enumerate(self.arrr_for_t):
+                    if elem.isChecked():
+                        indexes.append(i)
+                self.canvas.plot_t(self.parent.a, self.parent.b, self.solution, indexes)
+            else:
+                _arr = list([0, 0])
+                for i, arr in enumerate([self.arrr_for_x_y, self.arrr_for_x_x]):
+                    for index, elem in enumerate(arr):
+                        if elem.isChecked():
+                            _arr[i] = index
+                            break
+                self.canvas.plot_x(self.parent.a, self.parent.b, self.solution, *_arr)
+
+    def __run(self):
+        try:
+            p = self.p
+            n = len(p)
+            a, b = self.parent.a, self.parent.b
+            variables = sp.symbols(" ".join(f"x{i + 1}" for i in range(n)))
+            f = sp.lambdify(variables, self.parent.f, "numpy")
+
+
+            def my_func(t, x):
+                return f(*x)
+
+
+            acc = float(f"1e-{self.parent.accuracy_6.value()}")
+            self.solution = solve_ivp(my_func, (a, b), p, t_eval=np.linspace(a, b, self.n_count.value()), method=self.parent.method_6.currentText(), rtol=acc, atol=acc).y
+
+            if (len(self.solution) == 0) or len(self.solution[0]) != self.n_count.value():
+                QMessageBox.warning(self, "Ошибка", "Внимание! Конец не достигнут!")
+                return
+            return True
+            #print(len(sol))
+
+        except Exception as message:
+            print(message)
+
+    def closeEvent(self, event):
+        self.parent.setEnabled(True)
 
 
 class Window(QMainWindow):
@@ -29,12 +165,16 @@ class Window(QMainWindow):
         self.f = None
         self.R, self.R_x, self.R_y = None, None, None
         self.vars_a, self.vars_b = None, None
+        self.for_graphic = None
 
         self.save_system_action.triggered.connect(self.__open_save_system)
         self.load_system_action.triggered.connect(self.__load_system)
 
         self._header = self.table.horizontalHeader()
-        self._header.sectionDoubleClicked.connect(self.__resize_columns)        
+        self._header.sectionDoubleClicked.connect(self.__resize_columns)
+
+        self._header2 = self.table2.verticalHeader()
+        self._header2.sectionDoubleClicked.connect(self.__run_graphic_window)
 
         self.about_action.triggered.connect(self.__open_author)
         self.help_action.triggered.connect(self.__open_help)
@@ -49,12 +189,17 @@ class Window(QMainWindow):
         self.iteration_count = 0
 
 
+    def __run_graphic_window(self, index):
+        if self.table2.rowCount() > 1:
+            self.for_graphic = ShowGraphic(self, self.__get_pk(index))
+            self.for_graphic.show()
+
     def __resize_table_2(self):
         self.table2.setColumnCount(self.table.rowCount() + 1)
 
 
-    def __get_p0(self):
-        return np.array(list(float(self.table2.item(0, i).text()) for i in range(1, self.table2.columnCount())))
+    def __get_pk(self, index):
+        return np.array(list(float(self.table2.item(index, i).text()) for i in range(1, self.table2.columnCount())))
 
 
     def __add_line_2(self, arr=None):
@@ -103,7 +248,7 @@ class Window(QMainWindow):
             self.R_y = sp.lambdify([vars_a + vars_b], sp.Matrix(arr_forr_R).jacobian(vars_b))
         
             #self.p0 = np.random.randn(n)
-            self.p0 = self.__get_p0()
+            self.p0 = self.__get_pk(0)
             self.table2.setRowCount(1)
             self.iteration_count = 0
             self.__for_run(True)
@@ -114,8 +259,10 @@ class Window(QMainWindow):
                     self.__run_cycle()
                 #print(self.get_x_X_a_b(self.p0))
         except Exception as message:
-            print(message)
-            self.statusbar.showMessage("При вычислении произошла ошибка")
+            #print(message)
+            self.statusbar.showMessage(str(message))
+            if not self.accuracy_5.isEnabled():
+                self.__for_run()
 
     def __for_run(self, flag=False):
         self.accuracy_5.setDisabled(flag)
@@ -135,11 +282,15 @@ class Window(QMainWindow):
         self.iteration.display(self.iteration_count)
         n = len(self.p0)
         res = self.get_x_X_a_b(self.p0)
+        if len(res) != 2:
+            raise Exception("Нет решения для x, X в крайней точке")
         #print(res)
         x_a, x_b = res[0][:n], res[1][:n]
         Phi_0 = self.R(np.concatenate([x_a, x_b]))
         def func_for_p(mu, p):
             res2 = self.get_x_X_a_b(p)
+            if len(res2) != 2:
+                raise Exception("Нет решения для x, X в крайней точке")
             x_a, x_b = res2[0][:n], res2[1][:n]
             X_a, X_b = res2[0][n:].reshape(n, n), res2[1][n:].reshape(n, n)
             Phi_pr = self.R_x(np.concatenate([x_a, x_b])) @ X_a + self.R_y(np.concatenate([x_a, x_b])) @ X_b
@@ -148,10 +299,13 @@ class Window(QMainWindow):
 
 
         acc = float(f"1e-{self.accuracy_5.value()}")
-        p1 = solve_ivp(func_for_p, (0, 1), self.p0, t_eval=np.array([0., 1.]), method=self.method_5.currentText(), rtol=acc, atol=acc).y.T[-1]
+        solll = solve_ivp(func_for_p, (0, 1), self.p0, t_eval=np.array([0., 1.]), method=self.method_5.currentText(), rtol=acc, atol=acc).y.T
+        if len(solll) != 2:
+            raise Exception("Нет решения для p на крайней точке")
+        p1 = solll[-1]
         #print("p1: ", p1)
         self.__add_line_2(p1)
-        if np.linalg.norm(self.p0 - p1) <= self.epsilon.value():
+        if np.linalg.norm(self.p0 - p1) <= float(f"1e-{self.epsilon.value()}"):
             self.__for_run(False)
         else:
             self.p0 = p1.copy()
@@ -351,6 +505,7 @@ def except_hook(cls, exception, traceback):
 if __name__ == "__main__":
     # show interface
     app = QApplication(sys.argv)
+    #form = ShowGraphic(5, np.array([2., 0., -.5, .5]))
     form = Window()
     form.show()
     sys.excepthook = except_hook

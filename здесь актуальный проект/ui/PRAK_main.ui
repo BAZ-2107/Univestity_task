@@ -86,7 +86,7 @@
         <item>
          <widget class="QLabel" name="label_6">
           <property name="text">
-           <string>Точность для p:</string>
+           <string>Точность для p: 10^-</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -94,18 +94,15 @@
          </widget>
         </item>
         <item>
-         <widget class="QDoubleSpinBox" name="epsilon">
-          <property name="decimals">
-           <number>4</number>
-          </property>
+         <widget class="QSpinBox" name="epsilon">
           <property name="minimum">
-           <double>0.000100000000000</double>
+           <number>1</number>
           </property>
           <property name="maximum">
-           <double>1.000000000000000</double>
+           <number>12</number>
           </property>
           <property name="value">
-           <double>0.010000000000000</double>
+           <number>2</number>
           </property>
          </widget>
         </item>
