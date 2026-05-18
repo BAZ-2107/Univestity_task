@@ -30,7 +30,7 @@
        <number>200</number>
       </attribute>
       <attribute name="horizontalHeaderMinimumSectionSize">
-       <number>200</number>
+       <number>30</number>
       </attribute>
       <column>
        <property name="text">
@@ -52,7 +52,7 @@
       </column>
       <column>
        <property name="text">
-        <string>input f(x)</string>
+        <string>                              input f(x)                              </string>
        </property>
        <property name="font">
         <font>
@@ -68,7 +68,7 @@
       </column>
       <column>
        <property name="text">
-        <string>input R(x(a),x(b))=0</string>
+        <string>                              input R(x(a),x(b))=0                              </string>
        </property>
        <property name="font">
         <font>
@@ -483,8 +483,19 @@
     <addaction name="help_action"/>
     <addaction name="about_action"/>
    </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>Примеры</string>
+    </property>
+    <addaction name="action_1_1"/>
+    <addaction name="action_1_2"/>
+    <addaction name="action_2_1"/>
+    <addaction name="action_2_2"/>
+    <addaction name="action_2_3"/>
+   </widget>
    <addaction name="_menu"/>
    <addaction name="reference_menu"/>
+   <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="help_action">
@@ -510,6 +521,31 @@
   <action name="open_graphic_action">
    <property name="text">
     <string>Открыть графическое окно</string>
+   </property>
+  </action>
+  <action name="action_1_1">
+   <property name="text">
+    <string>Пример 1.1</string>
+   </property>
+  </action>
+  <action name="action_1_2">
+   <property name="text">
+    <string>Пример 1.2</string>
+   </property>
+  </action>
+  <action name="action_2_1">
+   <property name="text">
+    <string>Пример 2.1</string>
+   </property>
+  </action>
+  <action name="action_2_2">
+   <property name="text">
+    <string>Пример 2.2</string>
+   </property>
+  </action>
+  <action name="action_2_3">
+   <property name="text">
+    <string>Пример 2.3</string>
    </property>
   </action>
  </widget>

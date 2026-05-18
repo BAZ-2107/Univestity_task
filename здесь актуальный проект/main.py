@@ -13,6 +13,9 @@ from scipy.integrate import solve_ivp
 import json
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+from PyQt5.QtPrintSupport import QPrinter, QPrintDialog
+import tempfile
+import os
 
 
 class PlotCanvas(FigureCanvas):
@@ -30,9 +33,7 @@ class PlotCanvas(FigureCanvas):
         self.axes.set_ylabel("Ось xi(t)")
         for index in indexes:
             for i, arr in enumerate(self.parent().arr_of_arr):
-                #print(arr)
                 self.axes.plot(arr['t'], arr['y'][index], label=f'x{index + 1}(t), ' + self.parent().listWidget.item(i).text(), linewidth=2)
-        #self.axes.grid(True)
         self.axes.legend()
         self.figure.tight_layout()
         self.draw()
@@ -51,12 +52,63 @@ class PlotCanvas(FigureCanvas):
             self.axes.text(arr['y'][y][-1], arr['y'][x][-1], ' F', fontsize=12, va='bottom', ha='left')
 
         self.axes.set_aspect("equal")
-        #self.axes.grid(True)
         self.axes.axhline(y=0, color='black', linewidth=0.8)
         self.axes.axvline(x=0, color='black', linewidth=0.8)
         self.axes.legend()
         self.figure.tight_layout()
         self.draw()    
+
+
+class Points(QWidget):
+    def __init__(self, arr, *args, **kwargs):
+        super().__init__()
+        uic.loadUi("ui/for_showPoint.ui", self)
+        self.setupUI(arr)
+
+    def setupUI(self, arr):
+        self.arr = arr
+        self.__fill_table()
+        self.copy.clicked.connect(self.__copy)
+        self.save.clicked.connect(self.__save)
+
+    def __copy(self):
+        clipboard = QApplication.clipboard()
+        self.__save("sasasdvfmlbkcgnblnbxnvldncvdlsvnjflnbxlfbnf.txt")
+        clipboard.setText(open("sasasdvfmlbkcgnblnbxnvldncvdlsvnjflnbxlfbnf.txt", 'r').read())
+        QMessageBox.information(self, "Копирование", "данные скопированы")
+
+    def __save(self, path=None):
+        if not path:
+            path, _ = QFileDialog.getSaveFileName(self, "Сохранить", f"txt/{get_random_path()}.txt", "TXT Files (*.txt)")
+        if path:
+            m, n = self.table.rowCount(), self.table.columnCount()
+            with open(path, 'w') as f:
+                for i in range(m):
+                    for j in range(n):
+                        if j != n - 1:
+                            print(self.table.item(i, j).text(), file=f, end=" ")
+                        else:
+                            print(self.table.item(i, j).text(), file=f, end="")
+                    if i != m - 1:
+                        print('', file=f, end="\n")
+            if path != "sasasdvfmlbkcgnblnbxnvldncvdlsvnjflnbxlfbnf.txt":
+                QMessageBox.information(self, "Сохранение точек", "точки сохранены")
+
+    def __fill_table(self):
+        n, k = len(self.arr["y"]), len(self.arr["y"][0])
+        self.table.setRowCount(k)
+        self.table.setColumnCount(n + 1)
+        for j in range(k):
+            for i in range(n + 1):
+                if i == 0:
+                    value = self.arr["t"][j]
+                else:
+                    value = self.arr["y"][i - 1][j]
+                item = QTableWidgetItem(str(value))
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                self.table.setItem(j, i, item)
+        self.table.setHorizontalHeaderLabels(["t"] + ["x" + str(i + 1) for i in range(n)])
+        self.table.resizeColumnsToContents()
 
 
 class ShowGraphic(QWidget):
@@ -67,6 +119,7 @@ class ShowGraphic(QWidget):
         self.setupUI(*args, **kwargs)
 
     def setupUI(self, *args, **kwargs):
+        self.__forPoint = None
         self.arr_of_arr = list([arr for arr in args])
         for i in range(len(args)):
             self.listWidget.addItem(self.parent.name_of_gr + f"_{i + 1}")
@@ -88,38 +141,67 @@ class ShowGraphic(QWidget):
         self.canvas = PlotCanvas(self)
         self.for_x.hide()
         self.layout().addWidget(self.canvas)
-        #self.n_count = QSpinBox(self)
-        #self.n_count.setRange(2, 1000)
-        #self.n_count.setValue(100)
-        #self.n_count.setSingleStep(100)
-        #self.run = QPushButton("Запуск", self)
         self.save_img = QPushButton("Сохранить картинку", self)
         self.save_gr = QPushButton("Сохранить график", self)
         self.open_gr = QPushButton("Открыть график", self)
-
-        #hboxlayout = QHBoxLayout()
-        #hboxlayout.addWidget(QLabel("Число точек: ", self))
-        #hboxlayout.addWidget(self.n_count)
+        self.print_gr = QPushButton("Печать", self)
 
         hboxlayout2 = QHBoxLayout()
-        #hboxlayout2.addWidget(self.run)
         hboxlayout2.addWidget(self.save_img)
         hboxlayout2.addWidget(self.save_gr)
         hboxlayout2.addWidget(self.open_gr)
+        hboxlayout2.addWidget(self.print_gr)
 
-        #self.layout().addItem(hboxlayout)
         self.layout().addItem(hboxlayout2)
-        #self.run.clicked.connect(self.__draw)
         self.save_img.clicked.connect(self.__save_fig)
         self.save_gr.clicked.connect(self.__save_gr)
         self.open_gr.clicked.connect(self.__load_graphic)
+        self.print_gr.clicked.connect(self.__print_graphic)
         self.parent.setDisabled(True)
         self.checkBox.toggled.connect(self.__draw)
         self.radioButton.toggled.connect(self.__draw)
         self.radioButton_2.toggled.connect(self.__draw)
         self.radioButton_3.toggled.connect(self.__draw)
         self.radioButton_4.toggled.connect(self.__draw)
+
+        self.listWidget.itemDoubleClicked.connect(self.__open_coords)
+
         self.__draw()
+
+    def __open_coords(self, elem):
+        self.__forPoint = Points(self.arr_of_arr[self.listWidget.row(elem)])
+        self.__forPoint.show()
+
+    def __print_graphic(self):
+        printer = QPrinter(QPrinter.HighResolution)
+        dialog = QPrintDialog(printer, self)
+
+        if dialog.exec_() != QPrintDialog.Accepted:
+            return
+
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+            temp_path = tmp_file.name
+
+        try:
+            self.canvas.figure.savefig(temp_path, dpi=300, bbox_inches='tight')
+            pixmap = QPixmap(temp_path)
+            painter = QPainter()
+            painter.begin(printer)
+            page_rect = printer.pageRect()
+            scaled_pixmap = pixmap.scaled(
+                page_rect.size(),
+                aspectRatioMode=True,
+                transformMode=Qt.SmoothTransformation
+            )
+            x = (page_rect.width() - scaled_pixmap.width()) / 2
+            y = (page_rect.height() - scaled_pixmap.height()) / 2
+            painter.drawPixmap(int(x), int(y), scaled_pixmap)
+
+            painter.end()
+            QMessageBox.information(self, "Печать", "График отправлен на печать.")
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
     def __save_gr(self):
         file_path, _ = QFileDialog.getSaveFileName(self, "Сохранить", get_random_path(), "NPZ Files (*.npz)")
@@ -127,7 +209,6 @@ class ShowGraphic(QWidget):
             try:
                 np.savez(file_path, **dict((str(i), np.vstack([arr['t'], arr['y']])) for i, arr in enumerate(self.arr_of_arr)))
                 self.listWidget.clear()
-                #st = file_path.split('/')[-1].split('.')[0]
                 stt = file_path[file_path.rfind('/') + 1:]
                 st = stt[:stt.rfind('.')]
                 for i in range(len(self.arr_of_arr)):
@@ -177,11 +258,25 @@ class ShowGraphic(QWidget):
                         break
             self.canvas.plot_x(*_arr)
 
+    def __for_cut(self):
+        indexes = [i.row() for i in self.listWidget.selectedIndexes()]
+        if len(indexes) == self.listWidget.count():
+            return 
+        indexes.sort(reverse=True)
+        for ind in indexes:
+            item2 = self.arr_of_arr.pop(ind)
+            del item2
+            item = self.listWidget.takeItem(ind)
+            del item
+        self.__draw()
+
     def keyPressEvent(self, event):
         if event.matches(QKeySequence.Close):
             self.close()
         elif event.matches(QKeySequence.Open):
             self.__load_graphic()
+        elif event.matches(QKeySequence.Cut):
+            self.__for_cut()
 
     def closeEvent(self, event):
         self.parent.setEnabled(True)
@@ -211,6 +306,7 @@ class Window(QMainWindow):
 
         self._header = self.table.horizontalHeader()
         self._header.sectionDoubleClicked.connect(self.__resize_columns)
+        self._header.sectionResized.connect(self.__on_section_resized)
 
         self._header3 = self.table2.horizontalHeader()
         self._header3.sectionDoubleClicked.connect(self.__resize_columns_2)
@@ -220,14 +316,31 @@ class Window(QMainWindow):
 
         self.about_action.triggered.connect(self.__open_author)
         self.help_action.triggered.connect(self.__open_help)
+
+        for act in [self.action_1_1, self.action_1_2,
+                    self.action_2_1, self.action_2_2, self.action_2_3]:
+            act.triggered.connect(self.__open_embedded_system)
+
         self.add_string.clicked.connect(self.__add_line)
         self.del_string.clicked.connect(self.__del_line)
         self.run.clicked.connect(self.__solve_expression)
         self.next_step.clicked.connect(self.__run_cycle)
         self.break_run.clicked.connect(self.__for_run)
-        #self.table.rowsRemoved.connect(self.__resize_table_2)
         self.__load_system(True)
         self.iteration_count = 0
+
+    def __on_section_resized(self, logical_index, old_size, new_size):
+        if logical_index in [0, 1, 3]:
+            column_index = logical_index
+            correct_width = self.table.sizeHintForColumn(column_index)
+            if new_size != correct_width:
+                self.table.setColumnWidth(column_index, correct_width)
+
+    def __open_embedded_system(self):
+        if self.run.isEnabled():
+            self.__load_system(True, "default_" + self.sender().text().split()[-1].replace('.', '_'))
+        else:
+            self.statusbar.showMessage(f"Не открою, пока не завершите текущий алгоритм")
 
     def __open_gr_window(self):
         answer, _ = QFileDialog.getOpenFileName(self, "Выбор файла", ".", "NPZ Files (*.npz)")
@@ -310,7 +423,6 @@ class Window(QMainWindow):
             self.R_x = sp.lambdify([vars_a + vars_b], sp.Matrix(arr_forr_R).jacobian(vars_a))
             self.R_y = sp.lambdify([vars_a + vars_b], sp.Matrix(arr_forr_R).jacobian(vars_b))
         
-            #self.p0 = np.random.randn(n)
             self.p0 = self.__get_pk(0)
             self.table2.setRowCount(1)
             self.iteration_count = 0
@@ -320,9 +432,7 @@ class Window(QMainWindow):
             else:
                 while not self.method_5.isEnabled():
                     self.__run_cycle()
-                #print(self.get_x_X_a_b(self.p0))
         except Exception as message:
-            #print(message)
             self.statusbar.showMessage(str(message))
             if not self.accuracy_5.isEnabled():
                 self.__for_run()
@@ -347,7 +457,6 @@ class Window(QMainWindow):
         res = self.get_x_X_a_b(self.p0)
         if len(res) != 2:
             raise Exception("Нет решения для x, X в крайней точке")
-        #print(res)
         x_a, x_b = res[0][:n], res[1][:n]
         Phi_0 = self.R(np.concatenate([x_a, x_b]))
         def func_for_p(mu, p):
@@ -366,7 +475,6 @@ class Window(QMainWindow):
         if len(solll) != 2:
             raise Exception("Нет решения для p на крайней точке")
         p1 = solll[-1]
-        #print("p1: ", p1)
         self.__add_line_2(p1)
         if np.linalg.norm(self.p0 - p1) <= float(f"1e-{self.epsilon.value()}"):
             self.__for_run(False)
@@ -394,9 +502,12 @@ class Window(QMainWindow):
         return solve_ivp(my_func, (self.a, self.b), np.concatenate([p, np.eye(n).flatten()]), t_eval=np.array([self.a, self.b]), method=self.method_6.currentText(), rtol=acc, atol=acc).y.T
 
 
-    def __load_system(self, for_run=False):
+    def __load_system(self, for_run=False, name=None):
         if for_run:
-            answer = "user_files/default.json"
+            if not name:
+                answer = "user_files/default.json"
+            else:
+                answer = f"user_files/{name}.json"
         else:
             answer, _ = QFileDialog.getOpenFileName(self, "Выбор файла", "user_files", "JSON Files (*.json)")
         if answer:
@@ -406,10 +517,8 @@ class Window(QMainWindow):
                 with open(answer, 'r', encoding="utf-8") as fille:
                     data = json.load(fille)
                 n = len(data)
-                #print(n)
                 self.table.clearContents()
                 self.table.setRowCount(0)
-                #print(self.table.rowCount())
                 for i in range(n - 8):
                     self.__add_line()
                     st_i = str(i)
@@ -579,14 +688,11 @@ def get_random_path():
     st = str(datetime.now())
     return st[:st.find('.')].replace(':', '.')    
 
-# catch errors
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
 
 if __name__ == "__main__":
-    # show interface
     app = QApplication(sys.argv)
-    #form = ShowGraphic(5, np.array([2., 0., -.5, .5]))
     form = Window()
     form.show()
     sys.excepthook = except_hook
